@@ -8,10 +8,7 @@
  * attacker can lie about).
  *
  * Usage:
- *   node check-uploads.js <path-to-file> <declared-mime-type>
- *
- * Example:
- *   node check-uploads.js uploads/sample-real.png image/png
+ *   node src/cli/check-uploads.js <path-to-file> <declared-mime-type>
  */
 import fs from "node:fs";
 import { PipelineContext, ValidationPipeline } from "@secureupload/core";
@@ -26,7 +23,7 @@ import {
 const [, , filePath, declaredMimeType] = process.argv;
 
 if (!filePath || !declaredMimeType) {
-  console.error("Usage: node check-uploads.js <path-to-file> <declared-mime-type>");
+  console.error("Usage: node src/cli/check-uploads.js <path-to-file> <declared-mime-type>");
   process.exit(1);
 }
 

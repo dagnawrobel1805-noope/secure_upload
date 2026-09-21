@@ -2,48 +2,89 @@
 
 Open-source, self-hostable file upload security pipeline.
 
-## Structure
+## Project structure
 
-npm workspaces monorepo. Each phase of the project is its own package
-under `packages/`, so people can work on different phases without
-stepping on each other.
+This repository uses a modular monorepo layout. The root is kept clean for standard project files and configuration, while the reusable code is split into separate package folders under `packages/`.
 
 ```
-packages/
-  core/          Shared contracts (Validator, Scanner, Sanitizer interfaces)
-                 + the PipelineContext (findings + zip-bomb recursion guard)
-                 + stage runners (ValidationPipeline today; ScanPipeline,
-                 CdrPipeline etc. follow the same shape later).
-
-  validators/    Phase 1 — file-type/content validators.
-                 Currently just magic-byte.js. More get added here.
-
-  (scanners/, cdr/, quarantine/, service/ — not built yet)
+.
+├── README.md
+├── package.json
+├── package-lock.json
+├── jest.config.js
+├── .gitignore
+├── uploads/
+├── src/
+│   ├── cli/
+│   │   ├── check-uploads.js
+│   │   ├── check-scan.js
+│   │   └── check-clamav.js
+│   ├── tools/
+│   │   └── make-polyglot.js
+│   └── ...
+├── packages/
+│   ├── core/
+│   │   ├── src/
+│   │   └── test/
+│   ├── validators/
+│   │   ├── src/
+│   │   └── test/
+│   ├── scanners/
+│   │   ├── src/
+│   │   └── test/
+│   └── quarantine/
+│       ├── src/
+│       └── test/
+├── node_modules/
+└── test/
 ```
 
-**Rule of thumb:** every other package depends only on `core`, never on
-each other. That's what keeps this scalable — `cdr` doesn't need to know
-`scanners` exists.
+### Package responsibilities
+
+- `packages/core`: shared contracts and pipeline execution primitives
+- `packages/validators`: content, filename, ZIP, MIME, and polyglot validators
+- `packages/scanners`: scan pipeline and scanner implementations
+- `packages/quarantine`: quarantine storage and policy decisions
+- `src/cli`: runtime entrypoints for local testing and manual verification
+
+### Rule of thumb
+
+Each package is independent and should depend only on `core` or on public interfaces, not on sibling packages unless explicitly required.
 
 ## Getting started
 
 ```bash
-npm install       # installs everything for every workspace
-npm test          # runs all tests, across all packages
-npm run test:core # just the core package
-npm run test:validators
+npm install
+npm test
 ```
+
+Run specific package tests:
+
+```bash
+npm run test:core
+npm run test:validators
+npm run test:scanners
+npm run test:quarantine
+```
+
+Run the local CLI checks from the source tree:
+
+```bash
+npm run check:uploads -- uploads/eicar.txt text/plain
+npm run check:scan
+npm run check:clamav -- uploads/eicar.txt
+npm run make:polyglot
+```
+
+## Validation behavior
+
+Findings are recorded as structured results rather than thrown as exceptions. A file that fails validation is considered a normal, expected outcome; the pipeline records the finding and continues processing.
 
 ## Adding a new validator
 
-1. Add `packages/validators/src/your-validator.js`. It must match the
-   `Validator` shape documented in
-   `packages/core/src/interfaces/validator.js`:
-   `{ name: string, validate(buffer, meta) -> Finding[] }`.
+1. Add a new module under `packages/validators/src/`.
 2. Export it from `packages/validators/src/index.js`.
-3. Add `packages/validators/test/your-validator.test.js`.
-4. Wire it into a `ValidationPipeline` wherever validators get assembled
-   (not built yet — will live in `service/` once that exists).
+3. Add a matching test under `packages/validators/test/`.
+4. Wire it into the validation pipeline assembly used by your app or service layer.
 
-Findings should never be thrown as errors. A "bad" file is a normal,
-expected outcome — record it as a finding on the context, don't throw.
+The validating functions should follow the project convention of returning findings instead of throwing errors.

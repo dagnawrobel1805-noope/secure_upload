@@ -8,7 +8,13 @@
   "scripts": {
     "test": "node --experimental-vm-modules node_modules/.bin/jest",
     "test:core": "node --experimental-vm-modules node_modules/.bin/jest --selectProjects core",
-    "test:validators": "node --experimental-vm-modules node_modules/.bin/jest --selectProjects validators"
+    "test:validators": "node --experimental-vm-modules node_modules/.bin/jest --selectProjects validators",
+    "test:scanners": "node --experimental-vm-modules node_modules/.bin/jest --selectProjects scanners",
+    "test:quarantine": "node --experimental-vm-modules node_modules/.bin/jest --selectProjects quarantine",
+    "check:uploads": "node src/cli/check-uploads.js",
+    "check:scan": "node src/cli/check-scan.js",
+    "check:clamav": "node src/cli/check-clamav.js",
+    "make:polyglot": "node src/tools/make-polyglot.js"
   },
   "devDependencies": {
     "jest": "^29.7.0"
